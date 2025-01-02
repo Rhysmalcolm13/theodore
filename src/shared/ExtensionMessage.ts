@@ -20,7 +20,13 @@ export interface ExtensionMessage {
 		| "openAiModels"
 		| "mcpServers"
 		| "enhancedPrompt"
+		| "alwaysAllowMcp"
+		| "toggleToolAlwaysAllow"
 	text?: string
+	bool?: boolean
+	serverName?: string
+	toolName?: string
+	alwaysAllow?: boolean
 	action?:
 		| "chatButtonClicked"
 		| "mcpButtonClicked"
@@ -62,7 +68,14 @@ export interface ExtensionState {
 	preferredLanguage: string
 	writeDelayMs: number
 	terminalOutputLineLimit?: number
-	defaultMcpServersEnabled: Record<string, boolean>;
+	defaultMcpServersEnabled: Record<string, boolean>
+	mcpServerConfig?: {
+		name: string;
+		config: {
+			disabled?: boolean;
+			alwaysAllow?: boolean;
+		};
+	}[];
 }
 
 export interface ClineMessage {
