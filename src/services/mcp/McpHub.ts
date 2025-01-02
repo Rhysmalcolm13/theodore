@@ -57,7 +57,9 @@ export class McpHub {
 					command: config.command,
 					args: config.args,
 					env: config.env,
-					disabled: false
+					disabled: false,
+					name: serverId,
+					config: JSON.stringify(config)
 				}
 				await this.connectServer(server)
 			}
@@ -74,10 +76,21 @@ export class McpHub {
 				env: server.env
 			})
 
-			const client = new Client(transport)
-			await transport.connect()
-
-			const connection: McpConnection = { server, client, transport }
+			const client = new Client(
+				{
+					name: server.id,
+					version: "1.0.0"
+				},
+				{
+					capabilities: {
+						experimental: {},
+						sampling: {},
+						roots: { listChanged: false }
+					}
+				}
+			)
+			
+			const connection: McpConnection = { server, client, transport, status: 'connected' }
 			this.connections.set(server.id, connection)
 			this.communication.registerConnection(server.id, connection)
 		} catch (error) {
@@ -107,12 +120,12 @@ export class McpHub {
 		await this.connectServer(connection.server)
 	}
 
-	async toggleServerDisabled(serverId: string): Promise<void> {
+	async toggleServerDisabled(serverId: string, disabled: boolean): Promise<void> {
 		const settings = await this.loadSettings()
 		const config = settings.mcpServers[serverId]
 		if (!config) return
 
-		config.disabled = !config.disabled
+		config.disabled = disabled
 		await this.saveSettings(settings)
 
 		if (config.disabled) {
@@ -123,22 +136,24 @@ export class McpHub {
 				command: config.command,
 				args: config.args,
 				env: config.env,
-				disabled: false
+				disabled: false,
+				name: serverId,
+				config: JSON.stringify(config)
 			}
 			await this.connectServer(server)
 		}
 	}
 
-	async toggleToolAlwaysAllow(serverId: string, toolName: string): Promise<void> {
+	async toggleToolAlwaysAllow(serverId: string, toolName: string, alwaysAllow: boolean): Promise<void> {
 		const settings = await this.loadSettings()
 		const config = settings.mcpServers[serverId]
 		if (!config) return
 
 		config.alwaysAllow = config.alwaysAllow || []
 		const index = config.alwaysAllow.indexOf(toolName)
-		if (index === -1) {
+		if (alwaysAllow && index === -1) {
 			config.alwaysAllow.push(toolName)
-		} else {
+		} else if (!alwaysAllow && index !== -1) {
 			config.alwaysAllow.splice(index, 1)
 		}
 
@@ -157,6 +172,14 @@ export class McpHub {
 			throw new Error("Provider not available")
 		}
 		return derefProvider.getSettingsPath()
+	}
+
+	getMcpServersPath(): string {
+		const derefProvider = this.providerRef.deref()
+		if (!derefProvider) {
+			throw new Error("Provider not available")
+		}
+		return derefProvider.getMcpServersPath()
 	}
 
 	private async loadSettings(): Promise<{ mcpServers: Record<string, McpServerParameters> }> {

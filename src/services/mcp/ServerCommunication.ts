@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { NotificationSchema } from "@modelcontextprotocol/sdk/types.js";
+import { McpConnection } from "src/shared/mcp";
 import { z } from "zod";
-import { McpConnection } from "./McpHub
 
 // Event schemas for type safety
 const FileChangeEventSchema = z.object({

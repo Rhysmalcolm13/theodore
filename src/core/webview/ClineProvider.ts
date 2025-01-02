@@ -1373,7 +1373,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	getSettingsPath(): string {
-		return path.join(os.homedir(), '.theodore', 'settings.json');
+		return path.join(this.context.globalStorageUri.fsPath, 'settings.json')
+	}
+
+	getMcpServersPath(): string {
+		return path.join(this.context.globalStorageUri.fsPath, 'mcp-servers')
 	}
 
 	getBuiltinPath(): string {

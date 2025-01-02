@@ -8,12 +8,21 @@ export interface McpServer {
 	env?: Record<string, string>;
 	disabled?: boolean;
 	description?: string;
+	status?: 'connecting' | 'connected' | 'error';
+	tools?: McpTool[];
+	inputSchema?: Record<string, any>;
+	resourceTemplates?: McpResourceTemplate[];
+	resources?: McpResource[];
+	name: string;
+	config: string;
 }
 
 export interface McpConnection {
 	server: McpServer;
 	client: Client;
 	transport: StdioClientTransport;
+	status: 'connecting' | 'connected' | 'error';
+	error?: string;
 }
 
 export interface McpTool {
@@ -24,6 +33,7 @@ export interface McpTool {
 		properties: Record<string, any>;
 		required?: string[];
 	};
+	inputSchema?: Record<string, any>;
 }
 
 export interface McpToolCallResponse {
@@ -34,6 +44,9 @@ export interface McpResource {
 	id: string;
 	type: string;
 	content: string;
+	uri: string;
+	name: string;
+	description: string;
 }
 
 export interface McpResourceTemplate {
@@ -41,6 +54,8 @@ export interface McpResourceTemplate {
 	type: string;
 	description: string;
 	parameters: Record<string, any>;
+	uriTemplate: string;
+	name: string;
 }
 
 export interface McpResourceResponse {
