@@ -28,6 +28,7 @@ export interface McpConnection {
 export interface McpTool {
 	name: string;
 	description: string;
+	alwaysAllow?: boolean;
 	parameters: {
 		type: string;
 		properties: Record<string, any>;
@@ -47,6 +48,7 @@ export interface McpResource {
 	uri: string;
 	name: string;
 	description: string;
+	mimeType: string;
 }
 
 export interface McpResourceTemplate {
@@ -56,6 +58,7 @@ export interface McpResourceTemplate {
 	parameters: Record<string, any>;
 	uriTemplate: string;
 	name: string;
+	mimeType: string;
 }
 
 export interface McpResourceResponse {
