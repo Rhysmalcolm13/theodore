@@ -1771,11 +1771,11 @@ export class Cline {
 								const toolResultPretty =
 									(toolResult?.isError ? "Error:\n" : "") +
 										toolResult?.content
-											.map((item) => {
+											.map((item: { type: string; text?: string; resource?: { blob: any; [key: string]: any } }) => {
 												if (item.type === "text") {
 													return item.text
 												}
-												if (item.type === "resource") {
+												if (item.type === "resource" && item.resource) {
 													const { blob, ...rest } = item.resource
 													return JSON.stringify(rest, null, 2)
 												}
@@ -1836,7 +1836,7 @@ export class Cline {
 									?.mcpHub?.readResource(server_name, uri)
 								const resourceResultPretty =
 									resourceResult?.contents
-										.map((item) => {
+										.map((item: { text?: string }) => {
 											if (item.text) {
 												return item.text
 											}

@@ -22,10 +22,10 @@ export class McpHub {
 	private providerRef: WeakRef<ClineProvider>
 	private settingsWatcher?: vscode.FileSystemWatcher
 	private fileWatchers: Map<string, FSWatcher>
-	private connections: Map<string, McpConnection>
+	protected connections: Map<string, McpConnection>
 	private communication: ServerCommunication
 	private serverManager: ServerManager
-	private isConnecting: boolean
+	public isConnecting: boolean
 
 	constructor(provider: ClineProvider) {
 		this.providerRef = new WeakRef(provider)
@@ -42,7 +42,7 @@ export class McpHub {
 
 	async initialize(): Promise<void> {
 		const derefProvider = this.providerRef.deref()
-		if (!derefProvider) return
+		if (!derefProvider) {return}
 
 		await this.serverManager.initializeDefaultServers(derefProvider.context)
 		await this.connectToEnabledServers()
@@ -67,7 +67,7 @@ export class McpHub {
 	}
 
 	async connectServer(server: McpServer): Promise<void> {
-		if (this.connections.has(server.id)) return
+		if (this.connections.has(server.id)) {return}
 
 		try {
 			const transport = new StdioClientTransport({
@@ -101,7 +101,7 @@ export class McpHub {
 
 	async disconnectServer(serverId: string): Promise<void> {
 		const connection = this.connections.get(serverId)
-		if (!connection) return
+		if (!connection) {return}
 
 		try {
 			await connection.transport.close()
@@ -114,7 +114,7 @@ export class McpHub {
 
 	async restartConnection(serverId: string): Promise<void> {
 		const connection = this.connections.get(serverId)
-		if (!connection) return
+		if (!connection) {return}
 
 		await this.disconnectServer(serverId)
 		await this.connectServer(connection.server)
@@ -123,7 +123,7 @@ export class McpHub {
 	async toggleServerDisabled(serverId: string, disabled: boolean): Promise<void> {
 		const settings = await this.loadSettings()
 		const config = settings.mcpServers[serverId]
-		if (!config) return
+		if (!config) {return}
 
 		config.disabled = disabled
 		await this.saveSettings(settings)
@@ -147,7 +147,7 @@ export class McpHub {
 	async toggleToolAlwaysAllow(serverId: string, toolName: string, alwaysAllow: boolean): Promise<void> {
 		const settings = await this.loadSettings()
 		const config = settings.mcpServers[serverId]
-		if (!config) return
+		if (!config) {return}
 
 		config.alwaysAllow = config.alwaysAllow || []
 		const index = config.alwaysAllow.indexOf(toolName)
@@ -224,5 +224,40 @@ export class McpHub {
 		this.fileWatchers.clear()
 
 		this.settingsWatcher?.dispose()
+	}
+
+	async callTool(serverId: string, toolName: string, toolArguments: Record<string, unknown> = {}): Promise<any> {
+		const connection = this.connections.get(serverId)
+		if (!connection) {
+			throw new Error(`No connection found for server: ${serverId}`)
+		}
+
+		if (connection.server.disabled) {
+			throw new Error(`Server "${serverId}" is disabled and cannot be used`)
+		}
+
+		return connection.client.request({
+			method: 'tools/call',
+			params: {
+				name: toolName,
+				arguments: toolArguments
+			}
+		}, CallToolResultSchema)
+	}
+
+	async readResource(serverId: string, uri: string): Promise<any> {
+		const connection = this.connections.get(serverId)
+		if (!connection) {
+			throw new Error(`No connection found for server: ${serverId}`)
+		}
+
+		if (connection.server.disabled) {
+			throw new Error(`Server "${serverId}" is disabled`)
+		}
+
+		return connection.client.request({
+			method: 'resources/read',
+			params: { uri }
+		}, ReadResourceResultSchema)
 	}
 }

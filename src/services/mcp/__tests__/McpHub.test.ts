@@ -1,7 +1,7 @@
 import type { McpHub as McpHubType } from '../McpHub'
 import type { ClineProvider } from '../../../core/webview/ClineProvider'
 import type { ExtensionContext, Uri } from 'vscode'
-import type { McpConnection } from '../McpHub'
+import type { McpConnection } from '../../../shared/mcp'
 
 const vscode = require('vscode')
 const fs = require('fs/promises')
@@ -172,51 +172,71 @@ describe('McpHub', () => {
     })
 
     it('should filter out disabled servers from getServers', () => {
-      const mockConnections: McpConnection[] = [
-        {
+      const mockConnections = new Map<string, McpConnection>([
+        ['enabled-server', {
           server: {
+            id: 'enabled-server',
             name: 'enabled-server',
+            command: 'node',
+            args: [],
             config: '{}',
             status: 'connected',
             disabled: false
           },
           client: {} as any,
-          transport: {} as any
-        },
-        {
+          transport: {} as any,
+          status: 'connected'
+        }],
+        ['disabled-server', {
           server: {
+            id: 'disabled-server',
             name: 'disabled-server',
+            command: 'node',
+            args: [],
             config: '{}',
             status: 'connected',
             disabled: true
           },
           client: {} as any,
-          transport: {} as any
-        }
-      ]
+          transport: {} as any,
+          status: 'connected'
+        }]
+      ])
 
-      mcpHub.connections = mockConnections
+      Object.defineProperty(mcpHub, 'connections', {
+        value: mockConnections,
+        writable: true
+      })
+
       const servers = mcpHub.getServers()
-
       expect(servers.length).toBe(1)
       expect(servers[0].name).toBe('enabled-server')
     })
 
     it('should prevent calling tools on disabled servers', async () => {
-      const mockConnection: McpConnection = {
-        server: {
-          name: 'disabled-server',
-          config: '{}',
-          status: 'connected',
-          disabled: true
-        },
-        client: {
-          request: jest.fn().mockResolvedValue({ result: 'success' })
-        } as any,
-        transport: {} as any
-      }
+      const mockConnection = new Map<string, McpConnection>([
+        ['disabled-server', {
+          server: {
+            id: 'disabled-server',
+            name: 'disabled-server',
+            command: 'node',
+            args: [],
+            config: '{}',
+            status: 'connected',
+            disabled: true
+          },
+          client: {
+            request: jest.fn().mockResolvedValue({ result: 'success' })
+          } as any,
+          transport: {} as any,
+          status: 'connected'
+        }]
+      ])
 
-      mcpHub.connections = [mockConnection]
+      Object.defineProperty(mcpHub, 'connections', {
+        value: mockConnection,
+        writable: true
+      })
 
       await expect(mcpHub.callTool('disabled-server', 'some-tool', {}))
         .rejects
@@ -224,20 +244,29 @@ describe('McpHub', () => {
     })
 
     it('should prevent reading resources from disabled servers', async () => {
-      const mockConnection: McpConnection = {
-        server: {
-          name: 'disabled-server',
-          config: '{}',
-          status: 'connected',
-          disabled: true
-        },
-        client: {
-          request: jest.fn()
-        } as any,
-        transport: {} as any
-      }
+      const mockConnection = new Map<string, McpConnection>([
+        ['disabled-server', {
+          server: {
+            id: 'disabled-server',
+            name: 'disabled-server',
+            command: 'node',
+            args: [],
+            config: '{}',
+            status: 'connected',
+            disabled: true
+          },
+          client: {
+            request: jest.fn()
+          } as any,
+          transport: {} as any,
+          status: 'connected'
+        }]
+      ])
 
-      mcpHub.connections = [mockConnection]
+      Object.defineProperty(mcpHub, 'connections', {
+        value: mockConnection,
+        writable: true
+      })
 
       await expect(mcpHub.readResource('disabled-server', 'some/uri'))
         .rejects
@@ -247,29 +276,36 @@ describe('McpHub', () => {
 
   describe('callTool', () => {
     it('should execute tool successfully', async () => {
-      // Mock the connection with a minimal client implementation
-      const mockConnection: McpConnection = {
-        server: {
-          name: 'test-server',
-          config: JSON.stringify({}),
-          status: 'connected' as const
-        },
-        client: {
-          request: jest.fn().mockResolvedValue({ result: 'success' })
-        } as any,
-        transport: {
-          start: jest.fn(),
-          close: jest.fn(),
-          stderr: { on: jest.fn() }
-        } as any
-      }
+      const mockConnection = new Map<string, McpConnection>([
+        ['test-server', {
+          server: {
+            id: 'test-server',
+            name: 'test-server',
+            command: 'node',
+            args: [],
+            config: JSON.stringify({}),
+            status: 'connected' as const
+          },
+          client: {
+            request: jest.fn().mockResolvedValue({ result: 'success' })
+          } as any,
+          transport: {
+            start: jest.fn(),
+            close: jest.fn(),
+            stderr: { on: jest.fn() }
+          } as any,
+          status: 'connected'
+        }]
+      ])
 
-      mcpHub.connections = [mockConnection]
+      Object.defineProperty(mcpHub, 'connections', {
+        value: mockConnection,
+        writable: true
+      })
 
       await mcpHub.callTool('test-server', 'some-tool', {})
 
-      // Verify the request was made with correct parameters
-      expect(mockConnection.client.request).toHaveBeenCalledWith(
+      expect(mockConnection.get('test-server')?.client.request).toHaveBeenCalledWith(
         {
           method: 'tools/call',
           params: {
@@ -277,7 +313,7 @@ describe('McpHub', () => {
             arguments: {}
           }
         },
-        expect.any(Object)
+        { timeout: 30000 }
       )
     })
 

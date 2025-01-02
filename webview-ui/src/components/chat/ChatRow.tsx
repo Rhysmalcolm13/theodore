@@ -824,12 +824,16 @@ export const ChatRowContent = ({
 												server?.resources,
 												server?.resourceTemplates,
 											) || {
+												id: "",
+												type: "resource",
+												content: "",
+												uri: "",
 												name: "",
-												mimeType: "",
 												description: "",
+												mimeType: ""
 											}),
 											// Always use the actual URI from the request
-											uri: useMcpServer.uri || "",
+											uri: useMcpServer.uri || ""
 										}}
 									/>
 								)}
@@ -845,6 +849,8 @@ export const ChatRowContent = ({
 															?.description || "",
 													alwaysAllow: server?.tools?.find((tool) => tool.name === useMcpServer.toolName)
 														?.alwaysAllow || false,
+													parameters: server?.tools?.find((tool) => tool.name === useMcpServer.toolName)
+														?.parameters || { type: "object", properties: {}, required: [] }
 												}}
 												serverName={useMcpServer.serverName}
 											/>
