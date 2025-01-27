@@ -194,7 +194,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@anthropic-ai/bedrock-sdk": "^0.10.2",
+    "@anthropic-ai/bedrock-sdk": "^0.12.4",
     "@aws-sdk/client-bedrock-runtime": "^3.706.0",
     "@anthropic-ai/sdk": "^0.26.0",
     "@anthropic-ai/vertex-sdk": "^0.4.1",
